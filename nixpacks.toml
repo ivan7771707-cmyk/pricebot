@@ -1,4 +1,5 @@
 [phases.setup]
-nixPkgs = ["tesseract", "tesseract-langs.rus", "tesseract-langs.eng"]
+aptPkgs = ["tesseract-ocr", "tesseract-ocr-rus", "tesseract-ocr-eng", "libtesseract-dev", "poppler-utils"]
+
 [phases.build]
 cmds = ["pip install -r requirements.txt"]
