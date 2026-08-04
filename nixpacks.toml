@@ -1,2 +1,11 @@
-[phases.setup]
-nixPkgs = ["tesseract"]
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "nixPkgs": ["tesseract"]
+  },
+  "deploy": {
+    "startCommand": "python price_bot.py",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
