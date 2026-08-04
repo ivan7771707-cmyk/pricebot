@@ -1,6 +1,6 @@
-python-telegram-bot==20.0
+python-telegram-bot==20.8
 requests==2.31.0
-beautifulsoup4==4.12.2
-pdfplumber
-pillow==
+beautifulsoup4==4.12.3
+pillow==10.2.0
 pytesseract==0.3.10
+pdfplumber==0.10.4
