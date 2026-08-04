@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-Telegram-бот 'Контроль Снабжения' v3.3
-Исправления для Railway:
-- Добавлена ротация User-Agent и использование Session
-- Добавлен поиск по конкретным маркетплейсам (запасной вариант)
-- Расширенное логирование для отладки на сервере
-- Улучшен парсинг цен из текстовых блоков
+Telegram-бот 'Контроль Снабжения' v3.4
+Исправления:
+- Автоматический поиск пути к Tesseract
+- Диагностика ошибок поиска (вывод статусов в чат)
+- Улучшенный обход блокировок (Random User-Agent, Referer)
 """
 import logging
 import os
@@ -13,7 +12,7 @@ import re
 import asyncio
 import tempfile
 import random
-import time
+import shutil
 from io import BytesIO
 from PIL import Image
 import pytesseract
@@ -26,11 +25,28 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 # ТОКЕН БОТА
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8628765612:AAFwGwSnbBXjuI4sXhgEdFIqG-u-jo2wwuY")
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-    level=logging.INFO
-)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# --- Настройка Tesseract ---
+def setup_tesseract():
+    # Проверяем стандартные пути в Linux/Railway
+    paths = ['/usr/bin/tesseract', '/usr/local/bin/tesseract', '/nix/var/nix/profiles/default/bin/tesseract']
+    found_path = shutil.which('tesseract')
+    
+    if not found_path:
+        for p in paths:
+            if os.path.exists(p):
+                found_path = p
+                break
+    
+    if found_path:
+        pytesseract.pytesseract.tesseract_cmd = found_path
+        logger.info(f"Tesseract found at: {found_path}")
+    else:
+        logger.warning("Tesseract NOT found in PATH")
+
+setup_tesseract()
 
 STOP_WORDS = [
     'инн', 'кпп', 'бик', 'огрн', 'окпо', 'расч', 'корр', 'счёт', 'счет №', 'сч.', 'банк',
@@ -43,231 +59,144 @@ STOP_WORDS = [
 def is_service_line(line: str) -> bool:
     line_lower = line.lower()
     for word in STOP_WORDS:
-        if word in line_lower:
-            return True
-    digits_only = re.sub(r'\D', '', line)
-    return len(digits_only) > 15
+        if word in line_lower: return True
+    return len(re.sub(r'\D', '', line)) > 15
 
 def extract_items_from_text(text: str) -> list:
     items = []
     lines = text.split('\n')
     for line in lines:
         line = line.strip()
-        if not line or len(line) < 5 or is_service_line(line):
-            continue
-        
-        # Поиск цены: число в конце или с валютой
+        if not line or len(line) < 5 or is_service_line(line): continue
         price_match = re.search(r'(\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d{1,2})?)\s*(?:руб|₽|р\.?|rub)?\s*$', line, re.IGNORECASE)
-        if not price_match:
-            price_match = re.search(r'\b(\d{2,8}(?:[.,]\d{1,2})?)\b', line)
-            
+        if not price_match: price_match = re.search(r'\b(\d{2,8}(?:[.,]\d{1,2})?)\b', line)
         if price_match:
             try:
                 price_str = re.sub(r'[^\d.]', '', price_match.group(1).replace(' ', '').replace(',', '.'))
                 price = float(price_str)
-                if 50 <= price <= 100_000_000:
-                    name = line[:price_match.start()].strip()
-                    name = re.sub(r'[\s\|:,\.\-\_]+$', '', name)
-                    name = re.sub(r'^\d+[\s\.]+', '', name)
-                    if len(name) >= 3:
-                        items.append({'name': name[:100], 'price': price})
-            except:
-                continue
+                name = re.sub(r'[\s\|:,\.\-\_]+$', '', line[:price_match.start()].strip())
+                name = re.sub(r'^\d+[\s\.]+', '', name)
+                if len(name) >= 3: items.append({'name': name[:100], 'price': price})
+            except: continue
     return items
 
-async def get_prices_from_url(session, url, headers, source_name):
-    """Вспомогательная функция для парсинга цен с URL."""
+async def fetch_prices(url, source, headers):
     try:
-        resp = session.get(url, headers=headers, timeout=10)
-        logger.info(f"[{source_name}] Status: {resp.status_code}")
+        # Добавляем случайную задержку
+        await asyncio.sleep(random.uniform(1, 3))
+        resp = requests.get(url, headers=headers, timeout=12)
+        logger.info(f"{source} Status: {resp.status_code}")
         
         if resp.status_code != 200:
-            return []
+            return [], f"{source}: {resp.status_code}"
             
-        if "detected unusual traffic" in resp.text or "капча" in resp.text.lower():
-            logger.warning(f"[{source_name}] Blocked by CAPTCHA/Bot detection")
-            return []
+        if "detected unusual traffic" in resp.text or "captcha" in resp.text.lower():
+            return [], f"{source}: CAPTCHA"
 
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        # Удаляем скрипты и стили
-        for script in soup(["script", "style"]):
-            script.decompose()
-            
-        text = soup.get_text(separator=' ')
-        # Улучшенный regex для поиска цен в тексте
+        text = BeautifulSoup(resp.text, 'html.parser').get_text(separator=' ')
         matches = re.findall(r'(\d{1,3}(?:[\s\xa0\.]\d{3})*(?:[.,]\d{1,2})?)\s*(?:руб|₽|р\.)', text)
         
         found = []
         for m in matches:
-            # Очистка: убираем точки-разделители тысяч, запятую меняем на точку
-            p_str = m.replace('\xa0', '').replace(' ', '')
-            if '.' in p_str and ',' in p_str: # Формат 1.234,56
-                p_str = p_str.replace('.', '').replace(',', '.')
-            elif ',' in p_str: # Формат 1234,56
-                p_str = p_str.replace(',', '.')
-            # Если точек несколько (1.234.567), убираем все кроме последней или все если это разделители
-            if p_str.count('.') > 1:
-                p_str = p_str.replace('.', '')
-                
+            p_str = re.sub(r'[^\d.]', '', m.replace('\xa0', '').replace(' ', '').replace('.', '').replace(',', '.'))
             try:
                 p = float(p_str)
-                if 100 <= p <= 50_000_000:
-                    found.append(p)
+                if 100 <= p <= 50_000_000: found.append(p)
             except: continue
-            
-        logger.info(f"[{source_name}] Found {len(found)} price matches")
-        return found
+        return found, f"{source}: OK ({len(found)})"
     except Exception as e:
-        logger.error(f"[{source_name}] Error: {e}")
-        return []
+        return [], f"{source}: Error ({str(e)[:20]})"
 
 async def search_market_price(product_name: str) -> dict:
-    """Глобальный поиск цен с ротацией и запасными вариантами."""
-    user_agents = [
+    agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0'
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     ]
     
     headers = {
-        'User-Agent': random.choice(user_agents),
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
+        'User-Agent': random.choice(agents),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8',
+        'Referer': 'https://www.google.com/'
     }
 
-    session = requests.Session()
-    prices = []
     clean_name = re.sub(r'[^\w\s\d]', ' ', product_name).strip()
-    
-    # 1. Поиск в Google
-    google_url = f"https://www.google.com/search?q={requests.utils.quote('купить ' + clean_name + ' цена')}&hl=ru"
-    prices.extend(await get_prices_from_url(session, google_url, headers, "Google"))
+    all_prices = []
+    logs = []
 
-    # 2. Поиск в Яндексе (если мало результатов)
-    if len(prices) < 3:
-        yandex_url = f"https://yandex.ru/search/?text={requests.utils.quote(clean_name + ' цена руб')}"
-        prices.extend(await get_prices_from_url(session, yandex_url, headers, "Yandex"))
+    # 1. Google
+    p, log = await fetch_prices(f"https://www.google.com/search?q={requests.utils.quote('купить ' + clean_name + ' цена')}&hl=ru", "GGL", headers)
+    all_prices.extend(p); logs.append(log)
 
-    # 3. Поиск в DuckDuckGo (надежный fallback)
-    if len(prices) < 2:
-        ddg_url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(product_name + ' цена руб')}"
-        prices.extend(await get_prices_from_url(session, ddg_url, headers, "DuckDuckGo"))
+    # 2. Yandex
+    if len(all_prices) < 3:
+        p, log = await fetch_prices(f"https://yandex.ru/search/?text={requests.utils.quote(clean_name + ' цена руб')}", "YNDX", headers)
+        all_prices.extend(p); logs.append(log)
 
-    # 4. Прямой поиск на Pulscen (часто открыт для ботов)
-    if len(prices) < 2:
-        pulscen_url = f"https://www.pulscen.ru/search/price?q={requests.utils.quote(product_name)}"
-        prices.extend(await get_prices_from_url(session, pulscen_url, headers, "Pulscen"))
+    # 3. DuckDuckGo
+    if len(all_prices) < 2:
+        p, log = await fetch_prices(f"https://html.duckduckgo.com/html/?q={requests.utils.quote(product_name + ' цена руб')}", "DDG", headers)
+        all_prices.extend(p); logs.append(log)
 
-    if len(prices) >= 1:
-        prices.sort()
-        # Фильтрация выбросов
-        if len(prices) > 4:
-            cut = max(1, len(prices) // 5)
-            trimmed = prices[cut:-cut]
-        else:
-            trimmed = prices
-        
+    if all_prices:
+        all_prices.sort()
+        trimmed = all_prices[1:-1] if len(all_prices) > 4 else all_prices
         avg = sum(trimmed) / len(trimmed)
-        logger.info(f"Final result for '{product_name}': avg={avg}, count={len(prices)}")
-        return {
-            "avg": round(avg), 
-            "min": min(trimmed), 
-            "max": max(trimmed), 
-            "found": True,
-            "count": len(prices)
-        }
+        return {"avg": round(avg), "found": True, "diag": " | ".join(logs)}
     
-    logger.warning(f"No prices found for '{product_name}'")
-    return {"avg": None, "found": False}
+    return {"avg": None, "found": False, "diag": " | ".join(logs)}
 
 def generate_report(name: str, user_price: float, market: dict) -> str:
+    diag_info = f"\n<i>Отладка: {market.get('diag', 'нет данных')}</i>"
     if not market.get('found') or market['avg'] is None:
-        return (
-            f"📦 <b>{name}</b>\n"
-            f"💰 Ваша цена: {user_price:,.0f} ₽\n"
-            f"❓ Рыночная цена: не найдена\n"
-            f"<i>Попробуйте сократить название товара.</i>\n"
-        )
+        return f"📦 <b>{name}</b>\n💰 Ваша цена: {user_price:,.0f} ₽\n❓ Рыночная цена: не найдена{diag_info}\n"
 
     avg = market['avg']
     diff = user_price - avg
     percent = (diff / avg) * 100
-    status = "🟢 НОРМА"
-    if percent > 15: status = "🔴 ЗАВЫШЕНО"
-    elif percent > 5: status = "🟡 ВЫШЕ РЫНКА"
-    elif percent < -10: status = "🟢 НИЖЕ РЫНКА"
-    
+    status = "🔴 ЗАВЫШЕНО" if percent > 15 else "🟡 ВЫШЕ РЫНКА" if percent > 5 else "🟢 НИЖЕ РЫНКА" if percent < -10 else "🟢 НОРМА"
     verdict = f"Переплата: <b>{diff:,.0f} ₽ (+{percent:.0f}%)</b>" if diff > 0 else f"Экономия: <b>{abs(diff):,.0f} ₽</b>"
     if abs(percent) <= 5: verdict = "Цена в рынке"
 
-    return (
-        f"📦 <b>{name}</b>\n"
-        f"💰 Ваша цена: {user_price:,.0f} ₽\n"
-        f"🌐 Рынок (средняя): {avg:,.0f} ₽\n"
-        f"📢 {status} | {verdict}\n"
-    )
+    return f"📦 <b>{name}</b>\n💰 Ваша цена: {user_price:,.0f} ₽\n🌐 Рынок (средняя): {avg:,.0f} ₽\n📢 {status} | {verdict}{diag_info}\n"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🚀 <b>Контроль Снабжения v3.3</b>\n\n"
-        "Отправьте мне <b>PDF-счёт</b>, <b>фото</b> или <b>текст</b> (<i>Товар, цена</i>).",
-        parse_mode='HTML'
-    )
+    await update.message.reply_text("🚀 <b>Контроль Снабжения v3.4</b>\nОтправьте PDF, фото или 'Товар, цена'.", parse_mode='HTML')
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    if ',' not in text:
-        await update.message.reply_text("❌ Формат: <i>Название, Цена</i>")
-        return
-    parts = text.rsplit(',', 1)
+    if ',' not in update.message.text: return
+    parts = update.message.text.rsplit(',', 1)
     name, price_raw = parts[0].strip(), parts[1]
     try:
         price = float(re.sub(r'[^\d.]', '', price_raw.replace(',', '.')))
-    except:
-        await update.message.reply_text("❌ Ошибка в цене.")
-        return
-    
-    msg = await update.message.reply_text(f"🔍 Ищу рыночную цену для: <b>{name}</b>...", parse_mode='HTML')
+    except: return
+    msg = await update.message.reply_text(f"🔍 Ищу цену для: <b>{name}</b>...", parse_mode='HTML')
     market = await search_market_price(name)
     await msg.edit_text(f"📊 <b>ОТЧЁТ</b>\n━━━━━━━━━━━━━━━\n" + generate_report(name, price, market) + "━━━━━━━━━━━━━━━", parse_mode='HTML')
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    document = update.message.document
-    if not document or document.mime_type != 'application/pdf':
-        await update.message.reply_text("❌ Нужен PDF.")
-        return
+    if not update.message.document or update.message.document.mime_type != 'application/pdf': return
     msg = await update.message.reply_text("📥 Читаю PDF...")
     try:
-        file = await document.get_file()
+        file = await update.message.document.get_file()
         file_bytes = await file.download_as_bytearray()
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
-            tmp.write(file_bytes)
-            tmp_path = tmp.name
-        
-        extracted_text = ""
+            tmp.write(file_bytes); tmp_path = tmp.name
+        text = ""
         with pdfplumber.open(tmp_path) as pdf:
-            for page in pdf.pages:
-                extracted_text += (page.extract_text() or "") + "\n"
+            for page in pdf.pages: text += (page.extract_text() or "") + "\n"
         os.unlink(tmp_path)
-        
-        items = extract_items_from_text(extracted_text)
+        items = extract_items_from_text(text)
         if not items:
-            await msg.edit_text("⚠️ Товары не найдены.")
-            return
-            
-        await msg.edit_text(f"🔍 Найдено {len(items)} поз. Проверяю...")
+            await msg.edit_text("⚠️ Товары не найдены."); return
+        await msg.edit_text(f"🔍 Найдено {len(items)} поз. Сверяю...")
         report = "📄 <b>АНАЛИЗ PDF</b>\n━━━━━━━━━━━━━━━\n\n"
         for item in items[:5]:
             market = await search_market_price(item['name'])
             report += generate_report(item['name'], item['price'], market) + "\n"
-            await asyncio.sleep(1) # Небольшая пауза между запросами
         await msg.edit_text(report, parse_mode='HTML')
-    except Exception as e:
-        logger.error(f"PDF Error: {e}")
-        await msg.edit_text(f"❌ Ошибка: {e}")
+    except Exception as e: await msg.edit_text(f"❌ Ошибка: {e}")
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("📥 Распознаю фото...")
@@ -283,11 +212,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 market = await search_market_price(item['name'])
                 report += generate_report(item['name'], item['price'], market) + "\n"
             await msg.edit_text(report, parse_mode='HTML')
-        else:
-            await msg.edit_text("⚠️ Цены не найдены.")
-    except Exception as e:
-        logger.error(f"Photo Error: {e}")
-        await msg.edit_text(f"❌ Ошибка OCR: {e}")
+        else: await msg.edit_text("⚠️ Цены не найдены.")
+    except Exception as e: await msg.edit_text(f"❌ Ошибка OCR: {e}")
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
@@ -295,5 +221,4 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_text))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-    logger.info("Бот v3.3 запущен.")
     application.run_polling()
