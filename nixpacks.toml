@@ -1,2 +1,4 @@
 [phases.setup]
-nixPkgs = ["...", "tesseract", "tesseract-langs.rus", "tesseract-langs.eng"]
+nixPkgs = ["tesseract", "tesseract-langs.rus", "tesseract-langs.eng"]
+[phases.build]
+cmds = ["pip install -r requirements.txt"]
