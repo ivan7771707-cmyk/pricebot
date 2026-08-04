@@ -1,1 +1,1 @@
-worker: python3price_bot.py
+worker: python price_bot_v3_2.py
