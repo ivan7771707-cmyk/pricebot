@@ -21,8 +21,11 @@ from bs4 import BeautifulSoup
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# ТОКЕН БОТА
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8628765612:AAFwGwSnbBXjuI4sXhgEdFIqG-u-jo2wwuY")
+# НАСТРОЙКИ БОТА
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHANNEL_ID = os.getenv("CHANNEL_ID", "-1001702231808")
+if not TELEGRAM_TOKEN:
+    raise RuntimeError("TELEGRAM_TOKEN is not configured")
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
