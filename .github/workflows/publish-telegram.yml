@@ -139,6 +139,23 @@ jobs:
           d.text((1140, 592), "контроль-снабжения.рф", font=font(18), fill=(100, 100, 100), anchor="ra")
           img.save("telegram_visual.png", "PNG")
 
+          # When a user-approved photo is supplied, use the same card as Instagram.
+          photo_url = str(payload.get("photo_url") or "").strip()
+          if photo_url:
+              from urllib.parse import urlparse
+              from urllib.request import Request, urlopen
+              from io import BytesIO
+              u = urlparse(photo_url)
+              if u.scheme != "https" or u.hostname != "static.metricool.com":
+                  raise SystemExit("Photo URL must be hosted by Metricool")
+              request = Request(photo_url, headers={"User-Agent": "Mozilla/5.0"})
+              with urlopen(request, timeout=35) as resp:
+                  photo_bytes = resp.read(9_500_001)
+              if len(photo_bytes) > 9_500_000:
+                  raise SystemExit("Photo larger than Telegram limit")
+              approved_photo = Image.open(BytesIO(photo_bytes)).convert("RGB")
+              approved_photo.save("telegram_visual.png", "PNG")
+
           with open("telegram_caption.txt", "w", encoding="utf-8") as f:
               f.write(text)
           with open("telegram_edit_id.txt", "w", encoding="utf-8") as f:
