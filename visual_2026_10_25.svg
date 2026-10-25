@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0b1d30"/><stop offset="1" stop-color="#1a3550"/></linearGradient><linearGradient id="steel" x2="0" y2="1"><stop stop-color="#d7e2e9"/><stop offset="1" stop-color="#7b93a6"/></linearGradient></defs>
+<rect width="1080" height="1350" fill="url(#bg)"/>
+<rect x="72" y="62" width="256" height="49" rx="24" fill="#eaa55d"/><text x="200" y="95" fill="#14283a" font-family="DejaVu Sans,Arial,sans-serif" font-weight="bold" font-size="24" text-anchor="middle">НОВОСТЬ • 24.10</text>
+<text x="72" y="199" fill="#ffffff" font-family="DejaVu Sans,Arial,sans-serif" font-size="64" font-weight="bold">ГОРНУЮ ТЕХНИКУ</text>
+<text x="72" y="278" fill="#ffffff" font-family="DejaVu Sans,Arial,sans-serif" font-size="64" font-weight="bold">ХОТЯТ ЗАКУПАТЬ</text>
+<text x="72" y="357" fill="#f1b16c" font-family="DejaVu Sans,Arial,sans-serif" font-size="64" font-weight="bold">ПО НОВЫМ ПРАВИЛАМ</text>
+<text x="75" y="422" fill="#cddbe4" font-family="DejaVu Sans,Arial,sans-serif" font-size="29">Минпромторг предложил запрет импорта</text>
+<text x="75" y="461" fill="#cddbe4" font-family="DejaVu Sans,Arial,sans-serif" font-size="29">для регулируемых закупок по 44-ФЗ и 223-ФЗ</text>
+<g transform="translate(75 535)">
+<rect x="0" y="200" width="925" height="20" fill="#566f7f"/><path d="M70 205 L380 20 L800 205" fill="none" stroke="#c8d4dc" stroke-width="27" stroke-linecap="round"/><path d="M70 205 L380 20 L800 205" fill="none" stroke="#3f596d" stroke-width="12" stroke-linecap="round"/>
+<path d="M120 170 L180 170 L180 225 L120 225Z M340 45 L410 45 L410 225 L340 225Z M675 175 L740 175 L740 225 L675 225Z" fill="url(#steel)"/>
+<path d="M25 230 L845 230 L880 300 L0 300Z" fill="#aebec9"/>
+<g fill="#e9aa65"><circle cx="80" cy="210" r="18"/><circle cx="210" cy="130" r="18"/><circle cx="370" cy="32" r="18"/><circle cx="540" cy="112" r="18"/><circle cx="730" cy="200" r="18"/></g>
+<path d="M130 210 L205 145 L270 205 M480 205 L540 145 L610 205" fill="none" stroke="#95aebd" stroke-width="9"/>
+<rect x="25" y="297" width="845" height="18" fill="#385267"/>
+</g>
+<rect x="60" y="895" width="960" height="325" rx="28" fill="#f5f7f7"/>
+<text x="99" y="957" font-family="DejaVu Sans,Arial,sans-serif" font-size="36" font-weight="bold" fill="#10273a">ЦЕНА ПОКУПКИ — НЕ ВЕСЬ БЮДЖЕТ</text>
+<g font-family="DejaVu Sans,Arial,sans-serif" font-size="31" fill="#233f53">
+<circle cx="117" cy="1022" r="11" fill="#d9924d"/><text x="146" y="1033">Сроки поставки</text>
+<circle cx="575" cy="1022" r="11" fill="#d9924d"/><text x="604" y="1033">Доступность запчастей</text>
+<circle cx="117" cy="1111" r="11" fill="#d9924d"/><text x="146" y="1122">Стоимость сервиса</text>
+<circle cx="575" cy="1111" r="11" fill="#d9924d"/><text x="604" y="1122">Цена простоя</text></g>
+<text x="73" y="1272" fill="#d2e0e8" font-family="DejaVu Sans,Arial,sans-serif" font-size="26">ПОКА ЭТО ПРОЕКТ • ОБСУЖДЕНИЕ ДО 7 НОЯБРЯ</text>
+<text x="73" y="1312" fill="#a4bdca" font-family="DejaVu Sans,Arial,sans-serif" font-size="21">Источник: КонсультантПлюс, 24.10.2026</text>
+</svg>
