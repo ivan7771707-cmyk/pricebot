@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071B2E"/><stop offset="1" stop-color="#142E40"/></linearGradient></defs>
+<rect width="1080" height="1350" fill="url(#bg)"/>
+<rect width="1080" height="12" fill="#F3C94F"/>
+<text x="74" y="79" font-family="DejaVu Sans" font-size="24" font-weight="700" fill="#A5C0D1">ЭКОНОМИКА ПРОМЫШЛЕННОСТИ · 28.10.2026</text>
+<text x="72" y="184" font-family="DejaVu Sans" font-size="86" font-weight="700" fill="#FFFFFF">УГОЛЬ ДОРОЖАЕТ.</text>
+<text x="74" y="277" font-family="DejaVu Sans" font-size="82" font-weight="700" fill="#F3C94F">ПРИБЫЛЬ — НЕТ.</text>
+<text x="76" y="340" font-family="DejaVu Sans" font-size="29" fill="#BED0DB">Почему рост котировок не спасает отрасль</text>
+<rect x="72" y="400" width="936" height="208" rx="22" fill="#203B4D" stroke="#476174" stroke-width="2"/>
+<text x="111" y="468" font-family="DejaVu Sans" font-size="24" font-weight="700" fill="#B6CBD8">ЦЕНА УГЛЯ В ПОРТУ ВОСТОЧНЫЙ</text>
+<text x="105" y="555" font-family="DejaVu Sans" font-size="76" font-weight="700" fill="#FFFFFF">$106,1/т</text>
+<text x="625" y="544" font-family="DejaVu Sans" font-size="25" fill="#D2E0E9">FOB, сентябрь 2026</text>
+<text x="625" y="577" font-family="DejaVu Sans" font-size="23" fill="#A3BECE">Максимум с конца 2023-го</text>
+<rect x="72" y="630" width="936" height="226" rx="22" fill="#F3C94F"/>
+<text x="110" y="704" font-family="DejaVu Sans" font-size="26" font-weight="700" fill="#253744">ПРОГНОЗ МИНЭНЕРГО НА 2026 ГОД</text>
+<text x="104" y="799" font-family="DejaVu Sans" font-size="88" font-weight="700" fill="#10293B">≈70%</text>
+<text x="447" y="760" font-family="DejaVu Sans" font-size="31" font-weight="700" fill="#172E3E">угольных предприятий</text>
+<text x="447" y="802" font-family="DejaVu Sans" font-size="31" font-weight="700" fill="#172E3E">останутся убыточными</text>
+<text x="77" y="923" font-family="DejaVu Sans" font-size="30" font-weight="700" fill="#FFFFFF">ЧТО СЪЕДАЕТ МАРЖУ</text>
+<rect x="72" y="950" width="936" height="92" rx="15" fill="#1D394C"/>
+<circle cx="122" cy="997" r="22" fill="#F3C94F"/><text x="122" y="1007" text-anchor="middle" font-family="DejaVu Sans" font-size="25" font-weight="700" fill="#172B3A">1</text>
+<text x="166" y="1008" font-family="DejaVu Sans" font-size="29" fill="#F2F7F9">Дорогая доставка к восточным портам</text>
+<rect x="72" y="1055" width="936" height="92" rx="15" fill="#1D394C"/>
+<circle cx="122" cy="1102" r="22" fill="#F3C94F"/><text x="122" y="1112" text-anchor="middle" font-family="DejaVu Sans" font-size="25" font-weight="700" fill="#172B3A">2</text>
+<text x="166" y="1113" font-family="DejaVu Sans" font-size="29" fill="#F2F7F9">Долговая нагрузка и стоимость денег</text>
+<text x="75" y="1210" font-family="DejaVu Sans" font-size="25" fill="#C3D4DE">Цена продажи ≠ финансовый результат.</text>
+<path d="M74 1242 L1006 1242" stroke="#47677A" stroke-width="2"/>
+<text x="74" y="1286" font-family="DejaVu Sans" font-size="21" fill="#9CB6C7">Источники: АНИ, 28.10.2026; Минэнерго, 15.10.2026</text>
+<text x="1005" y="1320" text-anchor="end" font-family="DejaVu Sans" font-size="20" font-weight="700" fill="#D7E4EC">КОНТРОЛЬ СНАБЖЕНИЯ</text>
+</svg>
