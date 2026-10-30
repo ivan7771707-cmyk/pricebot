@@ -27,4 +27,5 @@
 <text x="68" y="1206" fill="#e2edf2" font-family="DejaVu Sans" font-size="27" font-weight="bold">Решение зависит от экономики простоя</text>
 <line x1="68" y1="1240" x2="1012" y2="1240" stroke="#4d6677" stroke-width="2"/>
 <text x="69" y="1294" fill="#aabfc9" font-family="DejaVu Sans" font-size="22">Источник: Интерфакс, 29 октября 2026</text>
+<!-- render after Telegram commit -->
 </svg>
