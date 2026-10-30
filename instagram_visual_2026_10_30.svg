@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101e2b"/><stop offset="1" stop-color="#1e3344"/></linearGradient>
+ <linearGradient id="card" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#263b4a"/><stop offset="1" stop-color="#1e303d"/></linearGradient>
+</defs>
+<rect width="1080" height="1350" fill="url(#bg)"/>
+<rect x="64" y="62" width="10" height="48" rx="4" fill="#f4bd58"/>
+<text x="98" y="94" fill="#e7eff4" font-family="DejaVu Sans" font-size="29" font-weight="bold">КОНТРОЛЬ СНАБЖЕНИЯ</text>
+<text x="70" y="205" fill="#f4bd58" font-family="DejaVu Sans" font-size="24" font-weight="bold" letter-spacing="1">ПРОМЫШЛЕННОСТЬ / 29.10.2026</text>
+<text x="66" y="300" fill="#ffffff" font-family="DejaVu Sans" font-size="74" font-weight="bold">ЗАПАСЫ</text>
+<text x="66" y="386" fill="#ffffff" font-family="DejaVu Sans" font-size="74" font-weight="bold">ИЛИ ПРОСТОЙ?</text>
+<text x="69" y="453" fill="#c5d3de" font-family="DejaVu Sans" font-size="29">Правительство призвало металлургов</text>
+<text x="69" y="497" fill="#c5d3de" font-family="DejaVu Sans" font-size="29">держать критически важные комплектующие</text>
+<rect x="66" y="559" width="948" height="556" rx="32" fill="url(#card)" stroke="#4c6472" stroke-width="2"/>
+<text x="104" y="631" fill="#f4bd58" font-family="DejaVu Sans" font-size="30" font-weight="bold">ТРИ ВОПРОСА К ЗАКУПКАМ</text>
+<circle cx="132" cy="729" r="35" fill="#f4bd58"/><text x="132" y="742" fill="#172c3a" text-anchor="middle" font-family="DejaVu Sans" font-size="33" font-weight="bold">1</text>
+<text x="200" y="722" fill="#ffffff" font-family="DejaVu Sans" font-size="31" font-weight="bold">Какие детали критичны?</text>
+<text x="200" y="764" fill="#b7c9d3" font-family="DejaVu Sans" font-size="24">Без них оборудование остановится</text>
+<line x1="106" y1="814" x2="973" y2="814" stroke="#49606e" stroke-width="2"/>
+<circle cx="132" cy="877" r="35" fill="#f4bd58"/><text x="132" y="889" fill="#172c3a" text-anchor="middle" font-family="DejaVu Sans" font-size="33" font-weight="bold">2</text>
+<text x="200" y="869" fill="#ffffff" font-family="DejaVu Sans" font-size="31" font-weight="bold">Как быстро их привезут?</text>
+<text x="200" y="910" fill="#b7c9d3" font-family="DejaVu Sans" font-size="24">Срок поставки, наличие, аналоги</text>
+<line x1="106" y1="961" x2="973" y2="961" stroke="#49606e" stroke-width="2"/>
+<circle cx="132" cy="1024" r="35" fill="#f4bd58"/><text x="132" y="1037" fill="#172c3a" text-anchor="middle" font-family="DejaVu Sans" font-size="33" font-weight="bold">3</text>
+<text x="200" y="1018" fill="#ffffff" font-family="DejaVu Sans" font-size="31" font-weight="bold">Сколько стоит остановка?</text>
+<text x="200" y="1059" fill="#b7c9d3" font-family="DejaVu Sans" font-size="24">Сравнить ущерб и стоимость запаса</text>
+<text x="68" y="1206" fill="#e2edf2" font-family="DejaVu Sans" font-size="27" font-weight="bold">Решение зависит от экономики простоя</text>
+<line x1="68" y1="1240" x2="1012" y2="1240" stroke="#4d6677" stroke-width="2"/>
+<text x="69" y="1294" fill="#aabfc9" font-family="DejaVu Sans" font-size="22">Источник: Интерфакс, 29 октября 2026</text>
+</svg>
