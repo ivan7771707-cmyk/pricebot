@@ -156,6 +156,14 @@ jobs:
               approved_photo = Image.open(BytesIO(photo_bytes)).convert("RGB")
               approved_photo.save("telegram_visual.png", "PNG")
 
+          local_photo = payload.get("photo_path")
+          if local_photo:
+              from pathlib import Path
+              p = Path(local_photo).resolve()
+              if not p.is_relative_to(Path.cwd().resolve()) or not p.is_file():
+                  raise SystemExit("Invalid repository photo path")
+              Image.open(p).convert("RGB").save("telegram_visual.png", "PNG")
+
           with open("telegram_caption.txt", "w", encoding="utf-8") as f:
               f.write(text)
           with open("telegram_edit_id.txt", "w", encoding="utf-8") as f:
