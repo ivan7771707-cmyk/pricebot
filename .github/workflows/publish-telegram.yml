@@ -21,7 +21,7 @@ jobs:
           python -m pip install pillow
           python - <<'PY'
           import json, os, textwrap
-          from PIL import Image, ImageDraw, ImageFont
+          from PIL import Image, ImageDraw, ImageFont, ImageColor
 
           token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
           if not token:
@@ -40,7 +40,10 @@ jobs:
               raise SystemExit("Telegram caption is too long; keep text at 1000 characters or less")
 
           W, H = 1200, 628
-          img = Image.new("RGB", (W, H), (247, 247, 244))
+          palette = visual.get("palette") or {}
+          def color(key, default):
+              return ImageColor.getrgb(palette[key]) if key in palette else default
+          img = Image.new("RGB", (W, H), color("background", (247, 247, 244)))
           d = ImageDraw.Draw(img)
 
           def font(size, bold=False):
@@ -50,14 +53,14 @@ jobs:
           def wrap(s, width):
               return textwrap.wrap(str(s), width=width, break_long_words=False)
 
-          d.rectangle((0, 0, W, 18), fill=(25, 25, 25))
-          d.text((60, 44), "КОНТРОЛЬ СНАБЖЕНИЯ", font=font(24, True), fill=(40, 40, 40))
+          d.rectangle((0, 0, W, 18), fill=color("stripe", (25, 25, 25)))
+          d.text((60, 44), "КОНТРОЛЬ СНАБЖЕНИЯ", font=font(24, True), fill=color("brand", (40, 40, 40)))
 
           title = str(visual.get("title", "")).strip()
           subtitle = str(visual.get("subtitle", "")).strip()
           y = 105
           for line in wrap(title, 34)[:3]:
-              d.text((60, y), line, font=font(48, True), fill=(15, 15, 15))
+              d.text((60, y), line, font=font(48, True), fill=color("title", (15, 15, 15)))
               y += 58
           if subtitle:
               y += 8
@@ -72,9 +75,9 @@ jobs:
           if vtype == "metric":
               big = str(visual.get("big_number", ""))
               label = str(visual.get("label", ""))
-              d.text((60, area_top), big, font=font(92, True), fill=(20, 20, 20))
+              d.text((60, area_top), big, font=font(92, True), fill=color("metric", (20, 20, 20)))
               for i, line in enumerate(wrap(label, 46)[:3]):
-                  d.text((60, area_top + 115 + i * 34), line, font=font(28), fill=(70, 70, 70))
+                  d.text((60, area_top + 115 + i * 34), line, font=font(28), fill=color("label", (70, 70, 70)))
 
           elif vtype == "comparison":
               left_title = str(visual.get("left_title", "Подход 1"))
@@ -136,7 +139,7 @@ jobs:
                       d.line((ax, ay, ax + gap - 12, ay), fill=(80, 80, 80), width=3)
                       d.polygon([(ax + gap - 12, ay), (ax + gap - 20, ay - 6), (ax + gap - 20, ay + 6)], fill=(80, 80, 80))
 
-          d.text((1140, 592), "контроль-снабжения.рф", font=font(18), fill=(100, 100, 100), anchor="ra")
+          d.text((1140, 592), "контроль-снабжения.рф", font=font(18), fill=color("footer", (100, 100, 100)), anchor="ra")
           img.save("telegram_visual.png", "PNG")
 
           # When a user-approved photo is supplied, use the same card as Instagram.
