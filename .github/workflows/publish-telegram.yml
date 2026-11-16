@@ -218,7 +218,7 @@ jobs:
           print(json.dumps({"type":"photo","media":"attach://photo","caption":caption}, ensure_ascii=False))
           PY
           )"
-            PHOTO_RESPONSE="$(curl --fail --silent --show-error \
+            PHOTO_RESPONSE="$(curl --fail --silent --show-error --ipv4 --connect-timeout 20 --max-time 60 --retry 3 --retry-delay 3 --retry-all-errors \
               -F "chat_id=$TELEGRAM_CHAT_ID" \
               -F "message_id=$MESSAGE_ID" \
               -F "media=$MEDIA_JSON" \
@@ -227,7 +227,7 @@ jobs:
             printf '%s' "$PHOTO_RESPONSE" | telegram_result_id > /dev/null
             PHOTO_ID="$MESSAGE_ID"
           else
-            PHOTO_RESPONSE="$(curl --fail --silent --show-error \
+            PHOTO_RESPONSE="$(curl --fail --silent --show-error --ipv4 --connect-timeout 20 --max-time 60 --retry 3 --retry-delay 3 --retry-all-errors \
               -F "chat_id=$TELEGRAM_CHAT_ID" \
               -F "photo=@telegram_visual.png" \
               -F "caption=<telegram_caption.txt" \
@@ -238,7 +238,7 @@ jobs:
 
           for TEXT_FILE in telegram_body_*.txt; do
             [ -f "$TEXT_FILE" ] || continue
-            TEXT_RESPONSE="$(curl --fail --silent --show-error \
+            TEXT_RESPONSE="$(curl --fail --silent --show-error --ipv4 --connect-timeout 20 --max-time 60 --retry 3 --retry-delay 3 --retry-all-errors \
               -F "chat_id=$TELEGRAM_CHAT_ID" \
               -F "text=<$TEXT_FILE" \
               -F "disable_web_page_preview=true" \
