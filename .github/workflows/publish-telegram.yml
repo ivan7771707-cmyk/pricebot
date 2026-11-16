@@ -36,8 +36,6 @@ jobs:
 
           if not text:
               raise SystemExit("telegram_post.json text is empty")
-          if len(text) > 1000:
-              raise SystemExit("Telegram caption is too long; keep text at 1000 characters or less")
 
           W, H = 1200, 628
           palette = visual.get("palette") or {}
@@ -168,10 +166,48 @@ jobs:
               Image.open(p).convert("RGB").save("telegram_visual.png", "PNG")
 
           with open("telegram_caption.txt", "w", encoding="utf-8") as f:
-              f.write(text)
+              # Telegram allows only a short caption with a photo.
+              # For a longer article, publish the headline with the photo and
+              # follow it with the complete article as regular text messages.
+              f.write(text if len(text) <= 1000 else text.splitlines()[0][:1000])
           with open("telegram_edit_id.txt", "w", encoding="utf-8") as f:
               f.write("" if edit_message_id in (None, "") else str(edit_message_id))
+          if len(text) > 1000:
+              remaining = text
+              part_no = 1
+              while remaining:
+                  if len(remaining) <= 4000:
+                      part, remaining = remaining, ""
+                  else:
+                      cut = remaining.rfind("\n\n", 0, 4001)
+                      if cut < 1800:
+                          cut = remaining.rfind(" ", 0, 4001)
+                      if cut < 1800:
+                          cut = 4000
+                      part, remaining = remaining[:cut].strip(), remaining[cut:].strip()
+                  with open(f"telegram_body_{part_no:03d}.txt", "w", encoding="utf-8") as f:
+                      f.write(part)
+                  part_no += 1
           PY
+
+          telegram_result_id() {
+            python -c '
+          import json, sys
+          payload = json.load(sys.stdin)
+          if payload.get("ok") is not True:
+              raise SystemExit("Telegram API error: " + str(payload.get("description", payload)))
+          result = payload.get("result")
+          if isinstance(result, dict):
+              message_id = result.get("message_id")
+              if not message_id:
+                  raise SystemExit("Telegram API did not return a message ID")
+              print(message_id)
+          elif result is True:
+              print("edited")
+          else:
+              raise SystemExit("Unexpected Telegram API response")
+          '
+          }
 
           if [ -s telegram_edit_id.txt ]; then
             MESSAGE_ID="$(cat telegram_edit_id.txt)"
@@ -182,7 +218,32 @@ jobs:
           print(json.dumps({"type":"photo","media":"attach://photo","caption":caption}, ensure_ascii=False))
           PY
           )"
-            curl --fail --silent --show-error               -F "chat_id=$TELEGRAM_CHAT_ID"               -F "message_id=$MESSAGE_ID"               -F "media=$MEDIA_JSON"               -F "photo=@telegram_visual.png"               "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/editMessageMedia"
+            PHOTO_RESPONSE="$(curl --fail --silent --show-error \
+              -F "chat_id=$TELEGRAM_CHAT_ID" \
+              -F "message_id=$MESSAGE_ID" \
+              -F "media=$MEDIA_JSON" \
+              -F "photo=@telegram_visual.png" \
+              "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/editMessageMedia")"
+            printf '%s' "$PHOTO_RESPONSE" | telegram_result_id > /dev/null
+            PHOTO_ID="$MESSAGE_ID"
           else
-            curl --fail --silent --show-error               -F "chat_id=$TELEGRAM_CHAT_ID"               -F "photo=@telegram_visual.png"               -F "caption=<telegram_caption.txt"               "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendPhoto"
+            PHOTO_RESPONSE="$(curl --fail --silent --show-error \
+              -F "chat_id=$TELEGRAM_CHAT_ID" \
+              -F "photo=@telegram_visual.png" \
+              -F "caption=<telegram_caption.txt" \
+              "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendPhoto")"
+            PHOTO_ID="$(printf '%s' "$PHOTO_RESPONSE" | telegram_result_id)"
           fi
+          echo "Telegram image delivered. message_id=$PHOTO_ID"
+
+          for TEXT_FILE in telegram_body_*.txt; do
+            [ -f "$TEXT_FILE" ] || continue
+            TEXT_RESPONSE="$(curl --fail --silent --show-error \
+              -F "chat_id=$TELEGRAM_CHAT_ID" \
+              -F "text=<$TEXT_FILE" \
+              -F "disable_web_page_preview=true" \
+              "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage")"
+            TEXT_ID="$(printf '%s' "$TEXT_RESPONSE" | telegram_result_id)"
+            echo "Telegram full-text segment delivered. message_id=$TEXT_ID"
+          done
+          echo "Telegram publication confirmed"
